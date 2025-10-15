@@ -148,6 +148,7 @@ function App() {
         setMessages(prev => [...prev, assistantMessage]);
       } catch (azureError) {
         // Fallback to backend API if Azure is not configured
+        console.error('❌ Azure error:', azureError);
         console.log('Azure not configured, trying backend API...');
 
         const response = await fetch('/api/chat', {

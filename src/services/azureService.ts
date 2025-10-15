@@ -56,27 +56,31 @@ export class AzureOpenAIService {
       ];
 
       // Call Azure OpenAI REST API directly
-      const response = await fetch(
-        `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=2024-08-01-preview`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'api-key': this.apiKey,
-          },
-          body: JSON.stringify({
-            messages,
-            max_tokens: 700,
-            temperature: 0.2,
-          }),
-        }
-      );
+      const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=2025-01-01-preview`;
+      console.log('📤 Calling Azure API:', url);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          messages,
+          max_tokens: 700,
+          temperature: 0.2,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error(`Azure API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Azure API error:', response.status, errorText);
+        throw new Error(`Azure API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Azure response received:', data);
+
       const assistantMessage = data.choices[0]?.message?.content || '';
 
       return {
@@ -91,8 +95,8 @@ export class AzureOpenAIService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Azure OpenAI error:', error);
-      throw new Error('Failed to get response from Azure OpenAI');
+      console.error('❌ Azure OpenAI error:', error);
+      throw error;
     }
   }
 }
