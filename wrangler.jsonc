@@ -1,0 +1,10 @@
+{
+  "name": "it-support-webapp",
+  "type": "javascript",
+  "main": "dist/index.html",
+  "compatibility_date": "2025-10-15",
+  "assets": {
+    "directory": "./dist"
+  }
+}
+
