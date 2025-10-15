@@ -65,9 +65,11 @@ http://localhost:3000
 In Cloudflare Pages dashboard, add:
 ```
 REACT_APP_AZURE_OPENAI_ENDPOINT=https://manjo-mgh4hjji-canadaeast.cognitiveservices.azure.com
-REACT_APP_AZURE_OPENAI_KEY=UEyHEY10kQI4OTTUE5xkO6Jp4nuVR0HsxUlOhqnBq1W4tZhhuauIJQQJ99BJACREanaXJ3w3AAAAACOGR2IB
+REACT_APP_AZURE_OPENAI_KEY=<your-azure-api-key>
 REACT_APP_AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
 ```
+
+⚠️ **Important**: Use your actual Azure API key from the `.env` file
 
 ### Step 2: Push to GitHub
 ```bash

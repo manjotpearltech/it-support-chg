@@ -69,9 +69,11 @@ Open DevTools (F12) and look for:
 ### `.env` (Created)
 ```
 REACT_APP_AZURE_OPENAI_ENDPOINT=https://manjo-mgh4hjji-canadaeast.cognitiveservices.azure.com
-REACT_APP_AZURE_OPENAI_KEY=UEyHEY10kQI4OTTUE5xkO6Jp4nuVR0HsxUlOhqnBq1W4tZhhuauIJQQJ99BJACREanaXJ3w3AAAAACOGR2IB
+REACT_APP_AZURE_OPENAI_KEY=<your-azure-api-key>
 REACT_APP_AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
 ```
+
+⚠️ **Note**: Never commit actual API keys to GitHub. Use `.env` file (in `.gitignore`) for local development.
 
 ### `src/services/azureService.ts` (Updated)
 - Added debug logging to verify credentials
