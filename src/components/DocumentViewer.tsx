@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, FileText, ExternalLink, Loader2 } from 'lucide-react';
+import { X, FileText, ExternalLink } from 'lucide-react';
 import { SecurePdfViewer } from './SecurePdfViewer';
 import './DocumentViewer.css';
 
