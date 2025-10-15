@@ -5,6 +5,7 @@ import { TypingIndicator } from './components/TypingIndicator';
 import { WelcomeMessage } from './components/WelcomeMessage';
 import { DocumentViewer } from './components/DocumentViewer';
 import { AlertCircle } from 'lucide-react';
+import { getAzureService } from './services/azureService';
 import './App.css';
 
 interface Message {
@@ -125,39 +126,64 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: content,
-          conversationHistory: messages.map(msg => ({
+      // Try to use Azure service if credentials are available
+      try {
+        const azureService = getAzureService();
+        const data = await azureService.chat(
+          content,
+          messages.map(msg => ({
             role: msg.role,
             content: msg.content,
-          })),
-        }),
-      });
+          }))
+        );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response,
+          citations: data.citations,
+          timestamp: data.timestamp,
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+      } catch (azureError) {
+        // Fallback to backend API if Azure is not configured
+        console.log('Azure not configured, trying backend API...');
+
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: content,
+            conversationHistory: messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response,
+          citations: data.citations,
+          timestamp: data.timestamp,
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
       }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response,
-        citations: data.citations,
-        timestamp: data.timestamp,
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
