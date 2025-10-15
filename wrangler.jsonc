@@ -2,7 +2,7 @@
   "name": "it-support-webapp",
   "compatibility_date": "2025-10-15",
   "assets": {
-    "directory": "./dist"
+    "directory": "./build"
   }
 }
 
