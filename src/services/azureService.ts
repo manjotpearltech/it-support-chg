@@ -28,10 +28,17 @@ export class AzureOpenAIService {
     const apiKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
     const deploymentName = process.env.REACT_APP_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini';
 
+    console.log('🔍 Azure Service Init:');
+    console.log('  Endpoint:', endpoint ? '✅ Set' : '❌ Not set');
+    console.log('  API Key:', apiKey ? '✅ Set' : '❌ Not set');
+    console.log('  Deployment:', deploymentName);
+
     if (!endpoint || !apiKey) {
+      console.error('❌ Azure OpenAI credentials not configured');
       throw new Error('Azure OpenAI credentials not configured');
     }
 
+    console.log('✅ Azure Service initialized successfully');
     this.endpoint = endpoint;
     this.apiKey = apiKey;
     this.deploymentName = deploymentName;
@@ -90,13 +97,13 @@ export class AzureOpenAIService {
   }
 }
 
-// Singleton instance
-let serviceInstance: AzureOpenAIService | null = null;
-
 export function getAzureService(): AzureOpenAIService {
-  if (!serviceInstance) {
-    serviceInstance = new AzureOpenAIService();
+  // Always create a new instance to ensure we get fresh environment variables
+  // This is important for development where env vars might change
+  try {
+    return new AzureOpenAIService();
+  } catch (error) {
+    throw error;
   }
-  return serviceInstance;
 }
 
