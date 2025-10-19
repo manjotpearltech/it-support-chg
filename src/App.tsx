@@ -4,8 +4,9 @@ import { ChatInput } from './components/ChatInput';
 import { TypingIndicator } from './components/TypingIndicator';
 import { WelcomeMessage } from './components/WelcomeMessage';
 import { DocumentViewer } from './components/DocumentViewer';
-import { AlertCircle } from 'lucide-react';
-import { getAzureService } from './services/azureService';
+import { TicketModal } from './components/TicketModal';
+import { AlertCircle, Ticket } from 'lucide-react';
+import { getExternalApiService } from './services/externalApiService';
 import './App.css';
 
 interface Message {
@@ -24,6 +25,7 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [documentViewer, setDocumentViewer] = useState<{
     isOpen: boolean;
     title: string;
@@ -41,6 +43,9 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // Initialize external API service
+  const apiService = getExternalApiService();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -126,71 +131,53 @@ function App() {
     setError(null);
 
     try {
-      // Try to use Azure service if credentials are available
-      try {
-        const azureService = getAzureService();
-        const data = await azureService.chat(
-          content,
-          messages.map(msg => ({
-            role: msg.role,
-            content: msg.content,
-          }))
-        );
+      // Use external API service
+      const data = await apiService.chat(
+        content,
+        messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }))
+      );
 
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.response,
-          citations: data.citations,
-          timestamp: data.timestamp,
-        };
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.response,
+        citations: data.citations,
+        timestamp: data.timestamp,
+      };
 
-        setMessages(prev => [...prev, assistantMessage]);
-      } catch (azureError) {
-        // Fallback to backend API if Azure is not configured
-        console.error('❌ Azure error:', azureError);
-        console.log('Azure not configured, trying backend API...');
-
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: content,
-            conversationHistory: messages.map(msg => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: data.response,
-          citations: data.citations,
-          timestamp: data.timestamp,
-        };
-
-        setMessages(prev => [...prev, assistantMessage]);
-      }
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleCreateTicket = async (
+    subject: string,
+    description: string,
+    userName: string,
+    userEmail: string
+  ) => {
+    const result = await apiService.createTicket(subject, description, userName, userEmail);
+
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'Failed to create ticket');
+    }
+
+    // Show success message in chat
+    const ticketMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `✅ ${result.message || 'Support ticket created successfully!'}\n\n**Ticket ID:** ${result.ticketId}\n\nYou'll receive an email confirmation shortly.`,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, ticketMessage]);
   };
 
   return (
@@ -207,23 +194,33 @@ function App() {
               <h1>Charger Logistics IT Support</h1>
               <p>⚡ Fast, AI-powered assistance</p>
             </div>
-            {messages.length > 0 && (
+            <div className="header-actions">
               <button
-                onClick={() => {
-                  setMessages([]);
-                  setError(null);
-                  setDocumentViewer({
-                    isOpen: false,
-                    title: '',
-                    url: '',
-                    content: ''
-                  });
-                }}
-                className="new-chat-btn"
+                onClick={() => setIsTicketModalOpen(true)}
+                className="ticket-btn"
+                title="Create Support Ticket"
               >
-                New Chat
+                <Ticket size={20} />
+                Create Ticket
               </button>
-            )}
+              {messages.length > 0 && (
+                <button
+                  onClick={() => {
+                    setMessages([]);
+                    setError(null);
+                    setDocumentViewer({
+                      isOpen: false,
+                      title: '',
+                      url: '',
+                      content: ''
+                    });
+                  }}
+                  className="new-chat-btn"
+                >
+                  New Chat
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
@@ -289,6 +286,13 @@ function App() {
         documentTitle={documentViewer.title}
         documentUrl={documentViewer.url}
         documentContent={documentViewer.content}
+      />
+
+      {/* Ticket Modal */}
+      <TicketModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
+        onSubmit={handleCreateTicket}
       />
     </div>
   );
