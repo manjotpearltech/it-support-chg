@@ -39,11 +39,11 @@ function App() {
   });
   const [dividerPosition, setDividerPosition] = useState(60);
   const [isDragging, setIsDragging] = useState(false);
+  const [apiService, setApiService] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
-  const apiServiceRef = useRef<any>(null);
 
   // Initialize Cloudflare Worker service
   useEffect(() => {
@@ -53,12 +53,13 @@ function App() {
         // For local development, you can change this to http://localhost:8787
         const workerUrl = process.env.REACT_APP_WORKER_URL || 'https://az.chargercloud.io';
 
-        apiServiceRef.current = getCloudflareWorkerService(workerUrl);
+        const service = getCloudflareWorkerService(workerUrl);
+        setApiService(service);
         console.log('✅ Cloudflare Worker Service initialized');
         console.log('🔗 Worker URL:', workerUrl);
 
         // Test connection
-        const isHealthy = await apiServiceRef.current.healthCheck();
+        const isHealthy = await service.healthCheck();
         if (!isHealthy) {
           console.warn('⚠️ Worker health check failed');
         }
@@ -70,8 +71,6 @@ function App() {
 
     initializeService();
   }, []);
-
-  const apiService = apiServiceRef.current;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
