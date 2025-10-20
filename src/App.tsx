@@ -49,17 +49,13 @@ function App() {
   useEffect(() => {
     const initializeService = async () => {
       try {
-        // Get Cloudflare Worker URL from environment variable
-        const workerUrl = process.env.REACT_APP_WORKER_URL;
-
-        if (!workerUrl) {
-          setError('Cloudflare Worker URL not configured. Please set REACT_APP_WORKER_URL in environment variables.');
-          console.error('❌ Worker URL not found');
-          return;
-        }
+        // Hardcoded Cloudflare Worker URL
+        // For local development, you can change this to http://localhost:8787
+        const workerUrl = process.env.REACT_APP_WORKER_URL || 'https://az.chargercloud.io';
 
         apiServiceRef.current = getCloudflareWorkerService(workerUrl);
         console.log('✅ Cloudflare Worker Service initialized');
+        console.log('🔗 Worker URL:', workerUrl);
 
         // Test connection
         const isHealthy = await apiServiceRef.current.healthCheck();
