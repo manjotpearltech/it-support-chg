@@ -6,7 +6,7 @@ import { WelcomeMessage } from './components/WelcomeMessage';
 import { DocumentViewer } from './components/DocumentViewer';
 import { TicketModal } from './components/TicketModal';
 import { AlertCircle, Ticket } from 'lucide-react';
-import { getAzureOpenAIDirectService } from './services/azureOpenAIDirectService';
+import { getCloudflareWorkerService } from './services/cloudflareWorkerService';
 import './App.css';
 
 interface Message {
@@ -45,24 +45,30 @@ function App() {
   const rafRef = useRef<number | null>(null);
   const apiServiceRef = useRef<any>(null);
 
-  // Initialize Azure OpenAI Direct service with API key
+  // Initialize Cloudflare Worker service
   useEffect(() => {
     const initializeService = async () => {
       try {
-        // Get API key from environment variable (set in GitHub Secrets or .env)
-        const apiKey = process.env.REACT_APP_AZURE_OPENAI_API_KEY;
+        // Get Cloudflare Worker URL from environment variable
+        const workerUrl = process.env.REACT_APP_WORKER_URL;
 
-        if (!apiKey) {
-          setError('Azure API key not configured. Please set REACT_APP_AZURE_OPENAI_API_KEY in environment variables.');
-          console.error('❌ Azure API key not found');
+        if (!workerUrl) {
+          setError('Cloudflare Worker URL not configured. Please set REACT_APP_WORKER_URL in environment variables.');
+          console.error('❌ Worker URL not found');
           return;
         }
 
-        apiServiceRef.current = getAzureOpenAIDirectService(apiKey);
-        console.log('✅ Azure OpenAI Direct Service initialized');
+        apiServiceRef.current = getCloudflareWorkerService(workerUrl);
+        console.log('✅ Cloudflare Worker Service initialized');
+
+        // Test connection
+        const isHealthy = await apiServiceRef.current.healthCheck();
+        if (!isHealthy) {
+          console.warn('⚠️ Worker health check failed');
+        }
       } catch (err) {
         console.error('❌ Service initialization error:', err);
-        setError('Failed to initialize Azure service');
+        setError('Failed to initialize worker service');
       }
     };
 

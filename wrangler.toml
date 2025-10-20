@@ -1,0 +1,20 @@
+name = "it-support-worker"
+main = "worker/index.js"
+compatibility_date = "2024-01-01"
+
+# Cloudflare Workers configuration
+# Deploy with: npx wrangler deploy
+
+# Environment variables (set these as secrets using wrangler)
+# DO NOT put actual values here - use: npx wrangler secret put <SECRET_NAME>
+#
+# Required secrets:
+# - AZURE_OPENAI_ENDPOINT
+# - AZURE_OPENAI_API_KEY
+# - AZURE_OPENAI_DEPLOYMENT
+# - AZURE_OPENAI_API_VERSION (optional, defaults to 2024-02-15-preview)
+
+[vars]
+# Non-sensitive variables can go here
+ENVIRONMENT = "production"
+
