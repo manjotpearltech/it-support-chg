@@ -5,7 +5,9 @@ import { TypingIndicator } from './components/TypingIndicator';
 import { WelcomeMessage } from './components/WelcomeMessage';
 import { DocumentViewer } from './components/DocumentViewer';
 import { TicketModal } from './components/TicketModal';
-import { AlertCircle, Ticket } from 'lucide-react';
+import { PasswordProtection } from './components/PasswordProtection';
+import { EmailPromptModal } from './components/EmailPromptModal';
+import { AlertCircle, Ticket, RefreshCw } from 'lucide-react';
 import { getCloudflareWorkerService } from './services/cloudflareWorkerService';
 import './App.css';
 
@@ -22,10 +24,12 @@ interface Message {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [isEmailPromptOpen, setIsEmailPromptOpen] = useState(false);
   const [documentViewer, setDocumentViewer] = useState<{
     isOpen: boolean;
     title: string;
@@ -44,6 +48,14 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const authenticated = sessionStorage.getItem('authenticated');
+    if (authenticated === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   // Initialize Cloudflare Worker service
   useEffect(() => {
@@ -178,7 +190,21 @@ function App() {
         timestamp: data.timestamp,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => {
+        const newMessages = [...prev, assistantMessage];
+
+        // Check if we have 3 or more user messages (after adding this one)
+        const userMessageCount = newMessages.filter(m => m.role === 'user').length;
+
+        // Auto-prompt for ticket after 3 user messages
+        if (userMessageCount === 3) {
+          setTimeout(() => {
+            setIsEmailPromptOpen(true);
+          }, 1000); // Delay to let user see the response first
+        }
+
+        return newMessages;
+      });
     } catch (err) {
       console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -214,6 +240,52 @@ function App() {
     setMessages(prev => [...prev, ticketMessage]);
   };
 
+  const handleEmailPromptSubmit = async (email: string, name: string) => {
+    if (!apiService) {
+      throw new Error('Service not initialized. Please refresh the page.');
+    }
+
+    // Create conversation summary
+    const conversationSummary = messages
+      .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
+      .join('\n\n');
+
+    const subject = 'IT Support Request - Conversation History';
+    const description = `Conversation History:\n\n${conversationSummary}`;
+
+    const result = await apiService.createTicket(subject, description, name, email);
+
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'Failed to create ticket');
+    }
+
+    // Show success message in chat
+    const ticketMessage: Message = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `Support ticket created successfully! Ticket ID: ${result.ticketId}\n\nWe've sent a confirmation to ${email}. Our team will follow up with you shortly.`,
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, ticketMessage]);
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setError(null);
+    setDocumentViewer({
+      isOpen: false,
+      title: '',
+      url: '',
+      content: ''
+    });
+  };
+
+  // Show password protection if not authenticated
+  if (!isAuthenticated) {
+    return <PasswordProtection onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div ref={containerRef} className="app-container">
       {/* Main Chat Area */}
@@ -239,18 +311,11 @@ function App() {
               </button>
               {messages.length > 0 && (
                 <button
-                  onClick={() => {
-                    setMessages([]);
-                    setError(null);
-                    setDocumentViewer({
-                      isOpen: false,
-                      title: '',
-                      url: '',
-                      content: ''
-                    });
-                  }}
+                  onClick={handleNewChat}
                   className="new-chat-btn"
+                  title="Start New Conversation"
                 >
+                  <RefreshCw size={18} />
                   New Chat
                 </button>
               )}
@@ -327,6 +392,13 @@ function App() {
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}
         onSubmit={handleCreateTicket}
+      />
+
+      {/* Email Prompt Modal (Auto-triggered after 3 messages) */}
+      <EmailPromptModal
+        isOpen={isEmailPromptOpen}
+        onClose={() => setIsEmailPromptOpen(false)}
+        onSubmit={handleEmailPromptSubmit}
       />
     </div>
   );
