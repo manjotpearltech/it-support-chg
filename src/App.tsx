@@ -143,7 +143,20 @@ function App() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (isLoading || !apiService) return;
+    console.log('🔵 handleSendMessage called with:', content);
+    console.log('🔵 isLoading:', isLoading);
+    console.log('🔵 apiService:', apiService);
+
+    if (isLoading) {
+      console.log('⚠️ Already loading, skipping...');
+      return;
+    }
+
+    if (!apiService) {
+      console.error('❌ API Service not initialized!');
+      setError('Service not initialized. Please refresh the page.');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -157,7 +170,8 @@ function App() {
     setError(null);
 
     try {
-      // Use Azure OpenAI Direct service
+      console.log('📤 Calling apiService.chat...');
+      // Use Cloudflare Worker service
       const data = await apiService.chat(
         content,
         messages.map(msg => ({
@@ -165,6 +179,7 @@ function App() {
           content: msg.content,
         }))
       );
+      console.log('📥 Received response:', data);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
