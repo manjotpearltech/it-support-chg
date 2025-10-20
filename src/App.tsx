@@ -45,20 +45,20 @@ function App() {
   const rafRef = useRef<number | null>(null);
   const apiServiceRef = useRef<any>(null);
 
-  // Initialize Azure OpenAI Direct service with access token
+  // Initialize Azure OpenAI Direct service with API key
   useEffect(() => {
     const initializeService = async () => {
       try {
-        // Get access token from environment variable (set in GitHub Secrets)
-        const token = process.env.REACT_APP_AZURE_ACCESS_TOKEN;
+        // Get API key from environment variable (set in GitHub Secrets or .env)
+        const apiKey = process.env.REACT_APP_AZURE_OPENAI_API_KEY;
 
-        if (!token) {
-          setError('Azure access token not configured. Please set REACT_APP_AZURE_ACCESS_TOKEN in environment variables.');
-          console.error('❌ Azure access token not found');
+        if (!apiKey) {
+          setError('Azure API key not configured. Please set REACT_APP_AZURE_OPENAI_API_KEY in environment variables.');
+          console.error('❌ Azure API key not found');
           return;
         }
 
-        apiServiceRef.current = getAzureOpenAIDirectService(token);
+        apiServiceRef.current = getAzureOpenAIDirectService(apiKey);
         console.log('✅ Azure OpenAI Direct Service initialized');
       } catch (err) {
         console.error('❌ Service initialization error:', err);

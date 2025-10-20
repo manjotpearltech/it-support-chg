@@ -1,11 +1,11 @@
 /**
  * Azure OpenAI Direct Service
- * 
+ *
  * This service calls Azure OpenAI directly from the frontend.
  * No backend server needed - perfect for Cloudflare Pages deployment.
- * 
- * Security: Uses Azure AD authentication via Bearer token.
- * Get token using: az account get-access-token --resource https://cognitiveservices.azure.com/
+ *
+ * Security: Uses Azure API Key authentication.
+ * Get API key from Azure Portal: Your OpenAI Resource → Keys and Endpoint
  */
 
 interface ChatMessage {
@@ -38,21 +38,21 @@ If you don't know something, admit it and suggest contacting IT support.`;
 
 /**
  * Azure OpenAI Direct Service
- * Calls Azure OpenAI directly from the frontend using Bearer token authentication
+ * Calls Azure OpenAI directly from the frontend using API Key authentication
  */
 export class AzureOpenAIDirectService {
   private endpoint: string;
   private deploymentName: string;
   private apiVersion: string;
-  private accessToken: string;
+  private apiKey: string;
   private userName?: string;
   private userEmail?: string;
 
-  constructor(accessToken: string, userName?: string, userEmail?: string) {
+  constructor(apiKey: string, userName?: string, userEmail?: string) {
     this.endpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT || '';
     this.deploymentName = process.env.REACT_APP_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini';
     this.apiVersion = process.env.REACT_APP_AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
-    this.accessToken = accessToken;
+    this.apiKey = apiKey;
     this.userName = userName;
     this.userEmail = userEmail;
 
@@ -88,7 +88,7 @@ export class AzureOpenAIDirectService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`,
+          'api-key': this.apiKey,
         },
         body: JSON.stringify({
           messages,
@@ -158,11 +158,11 @@ export class AzureOpenAIDirectService {
   }
 
   /**
-   * Update access token (call this when token expires)
+   * Update API key if needed
    */
-  setAccessToken(token: string) {
-    this.accessToken = token;
-    console.log('🔑 Access token updated');
+  setApiKey(apiKey: string) {
+    this.apiKey = apiKey;
+    console.log('🔑 API key updated');
   }
 }
 
@@ -170,10 +170,10 @@ export class AzureOpenAIDirectService {
  * Get an instance of the Azure OpenAI Direct service
  */
 export function getAzureOpenAIDirectService(
-  accessToken: string,
+  apiKey: string,
   userName?: string,
   userEmail?: string
 ): AzureOpenAIDirectService {
-  return new AzureOpenAIDirectService(accessToken, userName, userEmail);
+  return new AzureOpenAIDirectService(apiKey, userName, userEmail);
 }
 

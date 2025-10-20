@@ -2,12 +2,11 @@
 
 ## 🚀 Deploy in 15 Minutes
 
-### Step 1: Get Azure Token (2 min)
-```bash
-az login
-az account get-access-token --resource https://cognitiveservices.azure.com/ --query accessToken -o tsv
-```
-Copy the token output.
+### Step 1: Get Azure API Key (2 min)
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Navigate to your Azure OpenAI resource
+3. Click **Keys and Endpoint** in the left menu
+4. Copy **KEY 1**
 
 ### Step 2: Add GitHub Secrets (5 min)
 
@@ -20,7 +19,7 @@ Click **New repository secret** and add these 4:
 | `REACT_APP_AZURE_OPENAI_ENDPOINT` | `https://manjo-mgzmovnn-eastus2.openai.azure.com/` |
 | `REACT_APP_AZURE_OPENAI_DEPLOYMENT` | `azcaitsupportopenai-gpt-4o-mini` |
 | `REACT_APP_AZURE_OPENAI_API_VERSION` | `2024-02-15-preview` |
-| `REACT_APP_AZURE_ACCESS_TOKEN` | Paste your token from Step 1 |
+| `REACT_APP_AZURE_OPENAI_API_KEY` | Paste your API key from Step 1 |
 
 ### Step 3: Deploy to Cloudflare Pages (5 min)
 
@@ -66,17 +65,17 @@ npm start
 
 - ✅ No backend server needed
 - ✅ Secrets stored in GitHub (not in code)
-- ✅ Token expires after 1 hour (get new one if needed)
+- ✅ API key doesn't expire (unlike access tokens)
 - ✅ Build size: ~163 KB (gzipped)
 - ✅ Automatic deployment on every push
 
 ## 🆘 Troubleshooting
 
-**"Azure access token not configured"**
-→ Add `REACT_APP_AZURE_ACCESS_TOKEN` to GitHub Secrets
+**"Azure API key not configured"**
+→ Add `REACT_APP_AZURE_OPENAI_API_KEY` to GitHub Secrets
 
 **"Azure API error: 401"**
-→ Token expired. Get new one and update GitHub Secret
+→ API key is invalid. Check your key in Azure Portal
 
 **Build fails**
 → Check GitHub Actions logs. Verify all 4 secrets are set.
