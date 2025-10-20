@@ -142,17 +142,9 @@ function App() {
   };
 
   const handleSendMessage = async (content: string) => {
-    console.log('🔵 handleSendMessage called with:', content);
-    console.log('🔵 isLoading:', isLoading);
-    console.log('🔵 apiService:', apiService);
-
-    if (isLoading) {
-      console.log('⚠️ Already loading, skipping...');
-      return;
-    }
+    if (isLoading) return;
 
     if (!apiService) {
-      console.error('❌ API Service not initialized!');
       setError('Service not initialized. Please refresh the page.');
       return;
     }
@@ -169,7 +161,6 @@ function App() {
     setError(null);
 
     try {
-      console.log('📤 Calling apiService.chat...');
       // Use Cloudflare Worker service
       const data = await apiService.chat(
         content,
@@ -178,7 +169,6 @@ function App() {
           content: msg.content,
         }))
       );
-      console.log('📥 Received response:', data);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -203,6 +193,10 @@ function App() {
     userName: string,
     userEmail: string
   ) => {
+    if (!apiService) {
+      throw new Error('Service not initialized. Please refresh the page.');
+    }
+
     const result = await apiService.createTicket(subject, description, userName, userEmail);
 
     if (!result.success) {
