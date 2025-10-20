@@ -1,22 +1,23 @@
 // Configuration for Azure services
+// All credentials are loaded from environment variables (server-side only)
 const azureConfig = {
   search: {
     endpoint: process.env.AZURE_SEARCH_ENDPOINT,
     key: process.env.AZURE_SEARCH_KEY,
     index: process.env.AZURE_SEARCH_INDEX,
     apiVersion: process.env.AZURE_SEARCH_API_VERSION || '2024-07-01',
-    queryType: 'semantic',
-    semanticConfiguration: 'default',
-    topN: parseInt(process.env.AZURE_SEARCH_TOP_N || '3'),
+    queryType: process.env.AZURE_SEARCH_QUERY_TYPE || 'semantic',
+    semanticConfiguration: process.env.AZURE_SEARCH_SEMANTIC_CONFIG || 'default',
+    topN: parseInt(process.env.AZURE_SEARCH_TOP_N || '5'),
     strictness: parseInt(process.env.AZURE_SEARCH_STRICTNESS || '3'),
   },
   openai: {
     endpoint: process.env.AZURE_OPENAI_ENDPOINT,
     key: process.env.AZURE_OPENAI_KEY,
     deployment: process.env.AZURE_OPENAI_DEPLOYMENT,
-    apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2025-01-01-preview',
-    temperature: parseFloat(process.env.AZURE_OPENAI_TEMPERATURE || '0.2'),
-    maxTokens: parseInt(process.env.AZURE_OPENAI_MAX_TOKENS || '500'),
+    apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview',
+    temperature: parseFloat(process.env.AZURE_OPENAI_TEMPERATURE || '0.7'),
+    maxTokens: parseInt(process.env.AZURE_OPENAI_MAX_TOKENS || '6553'),
   },
 };
 

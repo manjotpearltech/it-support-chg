@@ -6,7 +6,7 @@ import { WelcomeMessage } from './components/WelcomeMessage';
 import { DocumentViewer } from './components/DocumentViewer';
 import { TicketModal } from './components/TicketModal';
 import { AlertCircle, Ticket } from 'lucide-react';
-import { getExternalApiService } from './services/externalApiService';
+import { getAzureOpenAIDirectService } from './services/azureOpenAIDirectService';
 import './App.css';
 
 interface Message {
@@ -43,9 +43,33 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerIdRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const apiServiceRef = useRef<any>(null);
 
-  // Initialize external API service
-  const apiService = getExternalApiService();
+  // Initialize Azure OpenAI Direct service with access token
+  useEffect(() => {
+    const initializeService = async () => {
+      try {
+        // Get access token from environment variable (set in GitHub Secrets)
+        const token = process.env.REACT_APP_AZURE_ACCESS_TOKEN;
+
+        if (!token) {
+          setError('Azure access token not configured. Please set REACT_APP_AZURE_ACCESS_TOKEN in environment variables.');
+          console.error('❌ Azure access token not found');
+          return;
+        }
+
+        apiServiceRef.current = getAzureOpenAIDirectService(token);
+        console.log('✅ Azure OpenAI Direct Service initialized');
+      } catch (err) {
+        console.error('❌ Service initialization error:', err);
+        setError('Failed to initialize Azure service');
+      }
+    };
+
+    initializeService();
+  }, []);
+
+  const apiService = apiServiceRef.current;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -117,7 +141,7 @@ function App() {
   };
 
   const handleSendMessage = async (content: string) => {
-    if (isLoading) return;
+    if (isLoading || !apiService) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -131,7 +155,7 @@ function App() {
     setError(null);
 
     try {
-      // Use external API service
+      // Use Azure OpenAI Direct service
       const data = await apiService.chat(
         content,
         messages.map(msg => ({
