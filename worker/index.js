@@ -1,9 +1,9 @@
 /**
  * Cloudflare Worker for Azure OpenAI Integration
- * 
+ *
  * This worker acts as a secure proxy between your React frontend and Azure OpenAI.
  * API keys are stored as Cloudflare secrets, never exposed to the browser.
- * 
+ *
  * Endpoints:
  * - POST /api/chat - Send chat messages to Azure OpenAI
  * - POST /api/ticket - Create support tickets
@@ -16,6 +16,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+
+// Hostname that should be handled by this Worker (others will pass through)
+const DEFAULT_API_HOST = 'az.chargercloud.io';
+
 
 /**
  * Handle CORS preflight requests
@@ -180,7 +184,7 @@ Remember: Be professional, organized, and helpful. Use **bold** for emphasis and
   } catch (error) {
     console.error('❌ Chat error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || 'Failed to process chat request',
         timestamp: new Date().toISOString(),
       }),
@@ -212,7 +216,7 @@ async function handleTicket(request, env) {
   } catch (error) {
     console.error('❌ Ticket creation error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || 'Failed to create ticket',
         success: false,
       }),
@@ -226,7 +230,7 @@ async function handleTicket(request, env) {
  */
 function handleHealth() {
   return new Response(
-    JSON.stringify({ 
+    JSON.stringify({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       service: 'IT Support Cloudflare Worker',
@@ -242,8 +246,15 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+    const host = url.hostname;
+    const apiHost = env.API_HOST || DEFAULT_API_HOST;
 
-    console.log(`📥 ${request.method} ${path}`);
+    console.log(`📥 ${request.method} ${host}${path}`);
+
+    // If this request is not for the API host, pass-through to origin (Pages)
+    if (host !== apiHost) {
+      return fetch(request);
+    }
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
