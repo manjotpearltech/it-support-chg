@@ -1,4 +1,4 @@
-name = "it-support-worker"
+name = "it-support-chg"
 main = "worker/index.js"
 compatibility_date = "2024-01-01"
 
