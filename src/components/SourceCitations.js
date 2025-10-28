@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, FileText, ExternalLink } from 'lucide-react';
 
-const SourceCitations = ({ sources }) => {
+const SourceCitations = ({ sources, onSourceClick }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!sources || sources.length === 0) return null;
+
+  /**
+   * Handle source click - open in PDF viewer or new tab
+   */
+  const handleSourceClick = (source) => {
+    // Check if we're on mobile (screen width < 768px)
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile || !onSourceClick) {
+      // Mobile: open in new tab
+      if (source.url) {
+        window.open(source.url, '_blank', 'noopener,noreferrer');
+      }
+    } else {
+      // Desktop: open in PDF viewer panel
+      onSourceClick(source);
+    }
+  };
 
   const getRelevanceColor = (score) => {
     const percentage = Math.round(score * 100);
@@ -50,6 +68,7 @@ const SourceCitations = ({ sources }) => {
             return (
               <div
                 key={idx}
+                onClick={() => handleSourceClick(source)}
                 className={`p-4 border rounded-xl transition-all duration-200 hover:shadow-light-md cursor-pointer ${getRelevanceBgColor(source.score)}`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -66,12 +85,9 @@ const SourceCitations = ({ sources }) => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0"
-                    title="View excerpt"
-                  >
+                  <div className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors flex-shrink-0">
                     <ExternalLink className="w-4 h-4 text-text-secondary" />
-                  </button>
+                  </div>
                 </div>
               </div>
             );

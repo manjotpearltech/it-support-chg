@@ -2,7 +2,7 @@ import React from 'react';
 import { User, Bot, Copy, RefreshCw } from 'lucide-react';
 import SourceCitations from './SourceCitations';
 
-const MessageBubble = ({ message, formatTime }) => {
+const MessageBubble = ({ message, formatTime, onSourceClick }) => {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
 
@@ -77,7 +77,10 @@ const MessageBubble = ({ message, formatTime }) => {
 
           {/* Source Citations */}
           {isAssistant && message.sources && message.sources.length > 0 && (
-            <SourceCitations sources={message.sources} />
+            <SourceCitations
+              sources={message.sources}
+              onSourceClick={onSourceClick}
+            />
           )}
 
           {/* Message Actions - Show on hover for completed assistant messages */}

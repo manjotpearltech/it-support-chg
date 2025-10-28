@@ -3,6 +3,23 @@ import { useState, useRef, useCallback } from 'react';
 const API_URL = 'https://worker.chargercloud.io';
 const STREAM_TIMEOUT = 30000; // 30 seconds
 
+/**
+ * IMPORTANT: PDF URLs are now provided by the backend as signed URLs
+ *
+ * The Cloudflare Worker should return signed URLs in the response:
+ * {
+ *   filename: "SOP_Document.pdf",
+ *   score: 0.95,
+ *   url: "https://your-r2-bucket.com/file.pdf?X-Amz-Signature=..."
+ * }
+ *
+ * These URLs should be:
+ * - Time-limited (e.g., 15-30 minutes expiration)
+ * - Signed with R2 credentials
+ * - Only accessible during active conversation
+ * - Not shareable or reusable
+ */
+
 // Generate unique message ID
 const generateMessageId = () => {
   return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -167,7 +184,8 @@ export const useStreamingChat = () => {
       const sources = (data.data || []).map(item => ({
         filename: item.filename,
         score: item.score,
-      }));
+        url: item.url, // Backend must provide signed URL
+      })).filter(item => item.url); // Only include sources with valid URLs
 
       // Simulate streaming for better UX
       await simulateStreaming(

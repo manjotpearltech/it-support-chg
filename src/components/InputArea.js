@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Send, Square } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 const InputArea = ({ 
   inputValue, 
@@ -39,45 +39,21 @@ const InputArea = ({
   };
 
   return (
-    <div className="fixed bottom-0 w-full bg-white/95 backdrop-blur-xl border-t border-border-primary p-4 shadow-light-lg z-40">
-      <div className="max-w-4xl mx-auto">
+    <div className="fixed bottom-0 w-full flex justify-center p-4 pb-6 z-40">
+      <div className="w-full max-w-3xl">
         {/* Error Message */}
         {error && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2">
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-full text-red-600 text-sm flex items-center gap-2 shadow-light">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         )}
 
-        {/* Streaming Indicator */}
-        {isStreaming && (
-          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-blue-600">
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></div>
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-              </div>
-              <span className="font-medium">AI is responding...</span>
-            </div>
-            <button
-              onClick={onCancelStreaming}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-xs text-red-600 hover:text-red-700 transition-all duration-200"
-            >
-              <Square className="w-3 h-3" />
-              <span>Stop</span>
-            </button>
-          </div>
-        )}
-
-        {/* Input Form */}
+        {/* Input Form - Capsule/Pill Shape */}
         <form onSubmit={handleSubmit} className="relative">
           <div className="relative">
-            {/* Gradient border effect */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl opacity-0 group-focus-within:opacity-100 blur transition-opacity duration-300"></div>
-
-            {/* Textarea container */}
-            <div className="relative bg-white border-2 border-border-primary focus-within:border-blue-500 rounded-2xl transition-all duration-200 focus-within:ring-4 focus-within:ring-blue-100 shadow-light">
+            {/* Textarea container - Pill shaped */}
+            <div className="relative bg-white/95 backdrop-blur-xl border-2 border-border-primary focus-within:border-blue-500 rounded-full transition-all duration-200 focus-within:ring-4 focus-within:ring-blue-100 shadow-light-lg hover:shadow-xl">
               <textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -86,12 +62,12 @@ const InputArea = ({
                 disabled={isStreaming}
                 placeholder="Ask me anything about IT support..."
                 rows="1"
-                className="w-full bg-transparent text-text-primary placeholder:text-text-muted p-4 pr-14 resize-none focus:outline-none text-sm md:text-base"
+                className="w-full bg-transparent text-text-primary placeholder:text-text-muted py-4 pl-6 pr-16 resize-none focus:outline-none text-sm md:text-base rounded-full"
                 style={{ maxHeight: '120px' }}
               />
 
               {/* Send Button */}
-              <div className="absolute right-2 bottom-2">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <button
                   type="submit"
                   disabled={!inputValue.trim() || isStreaming}
@@ -109,7 +85,7 @@ const InputArea = ({
           </div>
 
           {/* Character count and hints */}
-          <div className="mt-2 flex items-center justify-between text-xs text-text-muted px-1">
+          <div className="mt-2 flex items-center justify-between text-xs text-text-muted px-4">
             <span>Press Enter to send, Shift+Enter for new line</span>
             <span>{inputValue.length} characters</span>
           </div>
