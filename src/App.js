@@ -1,48 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
 import './index.css';
-
-const API_ENDPOINT = 'https://az.chargercloud.io/api/chat';
+import { useStreamingChat } from './hooks/useStreamingChat';
 
 function App() {
-  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Load messages and category from localStorage on mount
+  // Use streaming chat hook
+  const { messages, sendMessage, isStreaming, cancelStreaming, clearMessages, error } = useStreamingChat();
+
+  // Load category from localStorage on mount
   useEffect(() => {
-    const savedMessages = localStorage.getItem('chatMessages');
     const savedCategory = localStorage.getItem('selectedCategory');
-
-    if (savedMessages) {
-      try {
-        const parsed = JSON.parse(savedMessages);
-        // Convert timestamp strings back to Date objects
-        const messagesWithDates = parsed.map(msg => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }));
-        setMessages(messagesWithDates);
-      } catch (err) {
-        console.error('Error loading saved messages:', err);
-      }
-    }
-
     if (savedCategory) {
       setSelectedCategory(savedCategory);
     }
   }, []);
-
-  // Save messages to localStorage whenever they change
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('chatMessages', JSON.stringify(messages));
-    }
-  }, [messages]);
 
   // Save selected category to localStorage
   useEffect(() => {
@@ -78,12 +53,10 @@ function App() {
     if (messages.length > 0) {
       const confirmed = window.confirm('Start a new chat? This will clear the current conversation.');
       if (confirmed) {
-        setMessages([]);
+        clearMessages();
         setSelectedCategory(null);
-        localStorage.removeItem('chatMessages');
         localStorage.removeItem('selectedCategory');
         setInputValue('');
-        setError(null);
       }
     }
   };
@@ -91,82 +64,24 @@ function App() {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!inputValue.trim()) {
+    if (!inputValue.trim() || isStreaming) {
       return;
     }
 
     const userMessage = inputValue.trim();
     setInputValue('');
-    setError(null);
 
-    // Add user message to chat
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        type: 'user',
-        content: userMessage,
-        timestamp: new Date(),
-      },
-    ]);
-
-    setIsLoading(true);
-
-    try {
-      const response = await axios.post(API_ENDPOINT, {
-        message: userMessage,
-        category: selectedCategory, // Send selected category to backend
-      });
-
-      const { response: assistantResponse, timestamp } = response.data;
-
-      // Format markdown (keep bold, remove other formatting)
-      const formattedResponse = formatMarkdown(assistantResponse);
-
-      // Add assistant message to chat
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          type: 'assistant',
-          content: formattedResponse,
-          timestamp: new Date(timestamp),
-        },
-      ]);
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err.message || 'Failed to send message. Please try again.');
-
-      // Add error message to chat
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          type: 'error',
-          content: 'Sorry, I encountered an error processing your request. Please try again.',
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
+    // Send message using streaming hook
+    await sendMessage(userMessage);
   };
 
-  // Format markdown text for display (keep bold, remove other formatting)
-  const formatMarkdown = (text) => {
-    if (!text) return text;
-
-    // Keep the text as-is for now - we'll handle bold with CSS
-    // Remove italic markers (*)
-    let formatted = text.replace(/\*([^*]+)\*/g, '$1');
-
-    // Remove headers (# ## ###)
-    formatted = formatted.replace(/^#{1,6}\s+/gm, '');
-
-    return formatted;
+  // Handle example query clicks
+  const handleExampleClick = (query) => {
+    setInputValue(query);
+    textareaRef.current?.focus();
   };
 
-  // Render message content with bold formatting
+  // Render message content with bold formatting and line breaks
   const renderMessageContent = (content) => {
     if (!content) return '';
 
@@ -179,11 +94,18 @@ function App() {
         const boldText = part.slice(2, -2);
         return <strong key={index}>{boldText}</strong>;
       }
-      return part;
+      // Preserve line breaks
+      return part.split('\n').map((line, i, arr) => (
+        <React.Fragment key={`${index}-${i}`}>
+          {line}
+          {i < arr.length - 1 && <br />}
+        </React.Fragment>
+      ));
     });
   };
 
-  const formatTime = (date) => {
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -224,8 +146,30 @@ function App() {
         {messages.length === 0 ? (
           <div className="empty-state">
             <div className="welcome-header">
-              <h1 className="welcome-title">Welcome to <span className="brand-highlight">ChargerSupportAI</span></h1>
-              <p className="welcome-subtitle">Get instant help with IT, applications, and HR questions</p>
+              <h1 className="welcome-title">👋 Welcome to IT Support</h1>
+              <p className="welcome-subtitle">Ask questions about IT procedures and SOPs</p>
+            </div>
+
+            {/* Example Queries */}
+            <div className="example-queries">
+              <button
+                className="example-query-btn"
+                onClick={() => handleExampleClick('How do I reset my Okta password?')}
+              >
+                How do I reset my Okta password?
+              </button>
+              <button
+                className="example-query-btn"
+                onClick={() => handleExampleClick('VPN connection issues')}
+              >
+                VPN connection issues
+              </button>
+              <button
+                className="example-query-btn"
+                onClick={() => handleExampleClick('How to setup email on my phone?')}
+              >
+                How to setup email on my phone?
+              </button>
             </div>
 
             {/* Category Selection Boxes - Always visible */}
@@ -303,7 +247,7 @@ function App() {
                 <textarea
                   ref={textareaRef}
                   className="landing-input-field"
-                  placeholder={selectedCategory ? `Ask about ${selectedCategory}...` : "Ask anything..."}
+                  placeholder={selectedCategory ? `Ask about ${selectedCategory}... (Press Enter to send)` : "Ask anything... (Press Enter to send)"}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => {
@@ -312,25 +256,17 @@ function App() {
                       handleSendMessage(e);
                     }
                   }}
-                  disabled={isLoading}
+                  disabled={isStreaming}
                   rows="1"
                 />
                 <div className="landing-input-actions">
                   <button
-                    type="button"
-                    className="landing-attach-button"
-                    title="Attach file (coming soon)"
-                    disabled
-                  >
-                    📎
-                  </button>
-                  <button
                     type="submit"
                     className="landing-send-button"
-                    disabled={isLoading || !inputValue.trim()}
+                    disabled={isStreaming || !inputValue.trim()}
                     title="Send message (Enter)"
                   >
-                    ➤
+                    {isStreaming ? '⏳' : '➤'}
                   </button>
                 </div>
               </form>
@@ -339,32 +275,55 @@ function App() {
         ) : (
           <div className="conversation-container">
             {messages.map((message, index) => (
-              <div key={message.id} className={`message-wrapper ${message.type}`}>
-                <div className={`message ${message.type}`}>
-                  {message.type === 'user' && (
+              <div key={message.id} className={`message-wrapper ${message.role}`}>
+                <div className={`message ${message.role} ${message.isError ? 'error' : ''}`}>
+                  {message.role === 'user' && (
                     <div className="message-meta">
                       <span className="message-sender">You</span>
                       <span className="message-timestamp">{formatTime(message.timestamp)}</span>
                     </div>
                   )}
-                  {message.type === 'assistant' && (
+                  {message.role === 'assistant' && (
                     <div className="message-header">
                       <div className="message-meta">
                         <div className="answer-label">
                           <span className="message-icon">✦</span>
                           <span className="message-label">Answer</span>
+                          {!message.isComplete && (
+                            <span className="streaming-indicator">AI is responding...</span>
+                          )}
                         </div>
                         <span className="message-timestamp">{formatTime(message.timestamp)}</span>
                       </div>
                     </div>
                   )}
                   <div className="message-content">
-                    {message.type === 'assistant'
+                    {message.role === 'assistant'
                       ? renderMessageContent(message.content)
                       : message.content
                     }
                   </div>
-                  {message.type === 'assistant' && (
+
+                  {/* Source Citations */}
+                  {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
+                    <div className="message-sources">
+                      <div className="sources-header">📄 Sources</div>
+                      <div className="sources-list">
+                        {message.sources.map((source, idx) => (
+                          <div key={idx} className="source-item">
+                            <span className="source-filename">{source.filename}</span>
+                            {source.score && (
+                              <span className="source-score">
+                                {Math.round(source.score * 100)}% match
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {message.role === 'assistant' && message.isComplete && !message.isError && (
                     <div className="message-actions">
                       <button
                         className="action-button"
@@ -375,23 +334,14 @@ function App() {
                       >
                         📋 Copy
                       </button>
-                      <button
-                        className="action-button"
-                        onClick={() => {
-                          // Refresh/regenerate functionality could be added here
-                          console.log('Refresh clicked');
-                        }}
-                        title="Regenerate response"
-                      >
-                        🔄 Refresh
-                      </button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
 
-            {isLoading && (
+            {/* Show typing indicator when streaming starts */}
+            {isStreaming && messages.length > 0 && !messages[messages.length - 1].content && (
               <div className="message-wrapper assistant">
                 <div className="message assistant">
                   <div className="message-header">
@@ -420,7 +370,7 @@ function App() {
       {messages.length > 0 && (
         <div className="input-area">
           {error && (
-            <div style={{ color: '#ff6b6b', fontSize: '12px', marginBottom: '8px' }}>
+            <div className="error-message">
               ⚠️ {error}
             </div>
           )}
@@ -428,7 +378,7 @@ function App() {
             <textarea
               ref={textareaRef}
               className="input-field"
-              placeholder="Ask follow-up..."
+              placeholder={isStreaming ? "AI is responding..." : "Ask follow-up... (Press Enter to send, Shift+Enter for new line)"}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
@@ -437,17 +387,28 @@ function App() {
                   handleSendMessage(e);
                 }
               }}
-              disabled={isLoading}
+              disabled={isStreaming}
               rows="1"
             />
-            <button
-              type="submit"
-              className="send-button"
-              disabled={isLoading || !inputValue.trim()}
-              title="Send message (Enter)"
-            >
-              ➤
-            </button>
+            {isStreaming ? (
+              <button
+                type="button"
+                className="stop-button"
+                onClick={cancelStreaming}
+                title="Stop generating"
+              >
+                ⏹ Stop
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="send-button"
+                disabled={!inputValue.trim()}
+                title="Send message (Enter)"
+              >
+                {inputValue.trim() ? '➤' : '⏳'}
+              </button>
+            )}
           </form>
         </div>
       )}
