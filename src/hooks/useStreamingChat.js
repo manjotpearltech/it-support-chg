@@ -3,11 +3,6 @@ import { useState, useRef, useCallback } from 'react';
 const API_URL = 'https://worker.chargercloud.io';
 const STREAM_TIMEOUT = 30000; // 30 seconds
 
-// Generate unique session ID
-const generateSessionId = () => {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
 // Generate unique message ID
 const generateMessageId = () => {
   return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -17,8 +12,8 @@ export const useStreamingChat = () => {
   const [messages, setMessages] = useState([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
-  
-  const sessionIdRef = useRef(generateSessionId());
+
+  // Removed sessionIdRef as it's not needed for this API
   const abortControllerRef = useRef(null);
   const streamTimeoutRef = useRef(null);
 
@@ -42,12 +37,22 @@ export const useStreamingChat = () => {
   }, []);
 
   // Simulate streaming effect for better UX
-  const simulateStreaming = async (fullText, sources, assistantMessageId, abortSignal) => {
+  const simulateStreaming = useCallback(async (fullText, sources, assistantMessageId, abortSignal) => {
     // Split text into words for streaming effect
     const words = fullText.split(' ');
-    let currentContent = '';
+
+    // Helper function to update message content
+    const updateMessageContent = (content) => {
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId
+          ? { ...msg, content }
+          : msg
+      ));
+    };
 
     try {
+      let currentContent = '';
+
       for (let i = 0; i < words.length; i++) {
         // Check if cancelled
         if (abortSignal.aborted) {
@@ -58,11 +63,7 @@ export const useStreamingChat = () => {
         currentContent += (i === 0 ? '' : ' ') + words[i];
 
         // Update message with current content
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessageId
-            ? { ...msg, content: currentContent }
-            : msg
-        ));
+        updateMessageContent(currentContent);
 
         // Small delay for streaming effect (adjust for speed)
         await new Promise(resolve => setTimeout(resolve, 30));
@@ -77,17 +78,17 @@ export const useStreamingChat = () => {
 
     } catch (error) {
       if (error.name === 'AbortError') {
-        // Stream was cancelled
+        // Stream was cancelled - message already updated
         setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
-            ? { ...msg, content: currentContent || 'Response cancelled.', isComplete: true }
+            ? { ...msg, content: msg.content || 'Response cancelled.', isComplete: true }
             : msg
         ));
       } else {
         throw error;
       }
     }
-  };
+  }, []);
 
   // Send message and handle response
   const sendMessage = useCallback(async (query) => {
@@ -205,7 +206,7 @@ export const useStreamingChat = () => {
         streamTimeoutRef.current = null;
       }
     }
-  }, [isStreaming, cancelStreaming]);
+  }, [isStreaming, cancelStreaming, simulateStreaming]);
 
   return {
     messages,
