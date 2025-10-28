@@ -1,7 +1,6 @@
 import React from 'react';
 import { User, Bot, Copy, RefreshCw } from 'lucide-react';
 import SourceCitations from './SourceCitations';
-import TypingIndicator from './TypingIndicator';
 
 const MessageBubble = ({ message, formatTime }) => {
   const isUser = message.role === 'user';
@@ -65,20 +64,14 @@ const MessageBubble = ({ message, formatTime }) => {
               : 'bg-white border border-border-primary rounded-bl-sm shadow-light-md'
           }`}
         >
-          {/* Show typing indicator if assistant message has no content yet */}
+          {/* Message text - show empty state with minimal indicator if no content yet */}
           {isAssistant && !message.content && !message.isComplete ? (
-            <TypingIndicator />
+            <div className="text-sm text-text-muted italic">
+              Thinking...
+            </div>
           ) : (
             <div className={`text-sm leading-relaxed ${isUser ? 'text-white' : 'text-text-primary'}`}>
               {isAssistant ? renderMessageContent(message.content) : message.content}
-            </div>
-          )}
-
-          {/* Streaming indicator */}
-          {isAssistant && message.content && !message.isComplete && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-blue-400">
-              <div className="w-1 h-1 bg-blue-400 rounded-full animate-pulse"></div>
-              <span>AI is responding...</span>
             </div>
           )}
 
