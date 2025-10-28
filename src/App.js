@@ -10,11 +10,21 @@ import InputArea from './components/InputArea';
 import ScrollToBottom from './components/ScrollToBottom';
 import PDFViewerPanel from './components/PDFViewerPanel';
 import ResizableDivider from './components/ResizableDivider';
+import PasswordProtection from './components/PasswordProtection';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+
+  // Check if user is already authenticated (from sessionStorage)
+  useEffect(() => {
+    const authStatus = sessionStorage.getItem('isAuthenticated');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   // Use streaming chat hook
   const { messages, sendMessage, isStreaming, cancelStreaming, clearMessages, error } = useStreamingChat();
@@ -72,6 +82,11 @@ function App() {
       hour12: true,
     });
   };
+
+  // Show password protection if not authenticated
+  if (!isAuthenticated) {
+    return <PasswordProtection onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-bg-primary text-text-primary overflow-hidden flex">
