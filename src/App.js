@@ -89,10 +89,10 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary overflow-hidden flex">
+    <div className="min-h-screen bg-bg-primary text-text-primary flex">
       {/* Main Chat Area */}
       <div
-        className="flex-1 flex flex-col transition-all duration-300"
+        className="flex-1 flex flex-col transition-all duration-300 overflow-hidden"
         style={{
           width: isPDFOpen ? `${100 - panelWidth}%` : '100%',
           minWidth: isPDFOpen ? '30%' : '100%'
