@@ -8,8 +8,8 @@ const PasswordProtection = ({ onAuthenticated }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (password === '121') {
+
+    if (password === '141') {
       // Store authentication in sessionStorage (clears when browser closes)
       sessionStorage.setItem('isAuthenticated', 'true');
       onAuthenticated();
